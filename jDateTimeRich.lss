@@ -1,0 +1,85 @@
+Class jDateTimeRich
+	Private jSession As JavaSession
+	Private jBufferClass List As Javaclass
+	Private jBufferLocale List As Javaobject
+
+	Sub New()
+		Set jSession = New JavaSession
+	End Sub
+	
+	Private Function getClass(className As string) As javaclass
+		If Not IsElement(jBufferClass(className)) Then
+			Set jBufferClass(className) = jSession.GetClass(className)
+		End If
+
+		Set getClass = jBufferClass(className)
+	End Function
+	
+	Private Function getLocale(language As String, country As String) As JavaObject
+		Dim jClassLocale As Javaclass
+		Dim jLocale As JavaObject
+		Dim key As string
+
+		key = language & "-" & country
+		If IsElement(jBufferLocale(key)) Then
+			Set getLocale = jBufferLocale(key)
+			Exit function
+		End If
+
+		Set jClassLocale = getClass("java.util.Locale")
+		If language = "" Then
+			Set jLocale = jClassLocale.getDefault()
+		Else
+			If country = "" Then
+				Set jLocale = jClassLocale.Createobject("(Ljava/lang/String;)V", language)
+			Else
+				Set jLocale = jClassLocale.Createobject("(Ljava/lang/String;Ljava/lang/String;)V", language, country)
+			End If
+		End If
+		Set jBufferLocale(key) = jLocale
+		
+		Set getLocale = jLocale
+	End Function
+	
+	Private Function getDate(dt As NotesDateTime) As JavaObject
+		Dim jDateClass As JavaClass
+		Dim jDate As Javaobject
+		Dim dt_initial As NotesDateTime
+		Dim longDate As Double
+
+		Set jDateClass = getClass("java.util.Date")
+		Set jDate = jDateClass.Createobject()
+
+		If dt.Timeonly = "" Then
+			Set dt = New NotesDateTime(dt.Dateonly & " 00:00:00")
+		End If
+
+		Set dt_initial = New NotesDateTime("1/1/1970 00:00:00")
+		longDate = dt.Timedifferencedouble(dt_initial) * 1000
+		jDate.setTime(longDate)
+		
+		Set getDate = jDate
+	End Function
+	
+	%REM
+		Language (ISO 639) & Country (ISO 3166):
+			http://www.oracle.com/technetwork/java/javase/java8locales-2095355.html
+	%END REM
+	Public Function SimpleDateFormat(dt As NotesDateTime, pattern As string, language As String, country As String) As String
+		Dim jSimpleDateFormatClass As JavaClass
+		Dim jLocale As JavaObject
+		Dim jDate As Javaobject
+		Dim jSimpleDateFormat As Javaobject
+
+		If dt Is Nothing Then Exit function
+
+		Set jDate = getDate(dt)
+		Set jLocale = getLocale(language, country)
+
+		Set jSimpleDateFormatClass = getClass("java.text.SimpleDateFormat")
+		Set jSimpleDateFormat = jSimpleDateFormatClass.Createobject("(Ljava/lang/String;Ljava/util/Locale;)V", pattern, jLocale)
+
+		SimpleDateFormat = jSimpleDateFormat.format(jDate)
+	End Function
+	
+End Class
