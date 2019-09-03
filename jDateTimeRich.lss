@@ -72,6 +72,7 @@ Class jDateTimeRich
 		Dim jSimpleDateFormat As Javaobject
 
 		If dt Is Nothing Then Exit function
+		If Len(dt.Dateonly) = 0 Then Exit Function
 
 		Set jDate = getDate(dt)
 		Set jLocale = getLocale(language, country)
